@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Create Session</title>
+</head>
+<body>
+    <h1>Game server prototype</h1>
+    <p>Total sessions = </p>
+    <p id="sessions"></p>
+    <p id="gameCreate"></p>
+    <button onclick="createGameSession()">Create session</button>
+    <button onclick="back()">Back</button>
+
+    <div id="excelDataTable" onclick="joinSession()"></div>
+    <p id="joinCreate"></p>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script>
+      var queryString = window.location.href;
+      function joinSession(){
+        console.log(excelDataTable);
+
+        console.log(queryString);
+
+        $('.btnId').click(function(){
+          var sessionId = this.id;
+          clickFunc(sessionId);
+        });
+
+        function clickFunc(thisSession) {
+          var sessionId = thisSession;
+          console.log(sessionId);
+          fetch(queryString + '/game/' + sessionId + '/addplayer')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                        document.getElementById("joinCreate").innerHTML = "Games are joined!";
+                        location.href = queryString + '/game/' + sessionId + '/addplayer/ingame';
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        }
+    };
+    
+    function back(){
+            fetch(queryString + '/delete')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+                  location.href = '/';
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+    };
+
+    function createGameSession(){
+      console.log('createGameSession');
+      fetch('/game/create')
+        .then(
+          function(response) {
+            if (response.status !== 200) {
+              console.log('Looks like there was a problem. Status Code: ' + response.status);
+              return;
+            }
+
+            // Examine the text in the response
+            response.json().then(function(data) {
+              console.log(data);
+              document.getElementById("gameCreate").innerHTML = "Games are created!";
+            });
+          }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        window.location.reload();
+    };
+    
+    console.log('Show Results!');
+    fetch('/result')
+        .then(
+    function(response) {
+      if (response.status !== 200) {
+        console.log('Looks like there was a problem. Status Code: ' +
+          response.status);
+        return;
+      }
+
+      // Examine the text in the response
+      response.json().then(function(data) {
+        console.log(data);
+        document.getElementById("sessions").innerHTML = JSON.stringify(data.sessions);
+        // document.getElementById("players").innerHTML = JSON.stringify(data.players);
+        // document.getElementById("maps").innerHTML = JSON.stringify(data.maps);      
+        
+      //ErrorCode Table
+      selector = '#excelDataTable'
+
+          // creates a <table> element and a <tbody> element
+          var tbl = document.createElement("table");
+          var tblBody = document.createElement("tbody");
+          for (var i = 0; i < data.sessions.length; i++) {
+            //var row$ = $('<tr/>');
+            var row = document.createElement("tr"); 
+            var button = document.createElement("button");
+            
+            row.style.verticalAlign="center"
+            for (var colIndex = 0; colIndex <1; colIndex++){
+              var cell = document.createElement("td");
+              //.split(" ")
+              var games = data.sessions[i].sessionId;
+              var cellValue = games; //checkbox+
+              // var hl = document.createElement("button");
+              //hl.style = "background-color: #FFFF00";
+              // hl.innerHTML = text[1];
+              var cellText = document.createTextNode(cellValue);
+              button.id = games;
+              button.className = "btnId";
+              console.log(cellText);
+              cell.appendChild(cellText);
+              row.appendChild(cell);
+              button.appendChild(row);
+            }
+            tblBody.appendChild(button);
+            $(selector).append(tblBody);
+          }  
+      });
+    }
+  )
+  .catch(function(err) {
+    console.log('Fetch Error :-S', err);
+  });
+
+    </script>
+</body>
+</html>

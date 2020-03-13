@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Create Player</title>
+</head>
+<body>
+    <h1>Game server prototype</h1>
+    <p>Total sessions = </p>
+    <p id="sessions"></p>
+    <p>Total players = </p>
+    <p id="players"></p>
+    <p>Map position = </p>
+    <p id="maps"></p>
+    <button onclick="createPlayer()">Create Player</button>
+    <p id="playerCreate"></p>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script>
+
+        async function createPlayer(){
+            console.log('createGameSession');
+            fetch('/player/create')
+                .then( 
+                    async function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(async function (data) {
+                        console.log(data);
+                        document.getElementById("playerCreate").innerHTML = "Players are created!";
+                        for(var i=0; i<data.length;i++){
+                            var playerId = data[data.length-1].playerId;
+                        }
+                        
+                        thisPlayer(playerId);
+                    });
+                    
+                }
+            )
+            
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+
+        function thisPlayer(thisPlayerId){
+            console.log(thisPlayerId);
+            fetch('/player/' + thisPlayerId)
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                        location.href = "player/" + thisPlayerId + "/maps";
+                        // document.getElementById("thisPlayer").innerHTML = JSON.stringify(data);
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        };
+    };
+    
+    console.log('Show Results!');
+    fetch('/result')
+        .then(
+    function(response) {
+      if (response.status !== 200) {
+        console.log('Looks like there was a problem. Status Code: ' +
+          response.status);
+        return;
+      }
+
+      // Examine the text in the response
+      response.json().then(function(data) {
+        console.log(data);
+        document.getElementById("sessions").innerHTML = JSON.stringify(data.sessions);
+        document.getElementById("players").innerHTML = JSON.stringify(data.players);
+        document.getElementById("maps").innerHTML = JSON.stringify(data.maps);       
+      });
+    }
+  )
+  .catch(function(err) {
+    console.log('Fetch Error :-S', err);
+  });
+    </script>
+</body>
+</html>

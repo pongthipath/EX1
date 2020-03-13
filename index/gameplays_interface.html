@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Gameplays</title>
+<style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+    }
+
+    </style>
+</head>
+<body>
+    <h1>Game server prototype</h1>
+    <table style="width:100%">
+
+        <tr>
+          <td><p id="map0"></p></o></td>
+          <td><p id="map3"></p></td>
+          <td><p id="map6"></p></td>
+        </tr>
+        <tr>
+          <td><p id="map1"></p></td>
+          <td><p id="map4"></p></td>
+          <td><p id="map7"></p></td>
+        </tr>
+        <tr>
+          <td><p id="map2"></p></td>
+          <td><p id="map5"></p></td>
+          <td><p id="map8"></p></td>
+        </tr>
+      </table>
+      <button onclick="left()">Left</button>
+      <button onclick="up()">Up</button>
+      <button onclick="down()">Down</button>
+      <button onclick="right()">Right</button>
+      <p>
+      <button onclick="spawn()">Spawn</button>
+      <button onclick="back()">Back</button>
+      </p>
+      <p id="stateReady"></p>
+    
+
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script>
+      var queryString = window.location.href;
+
+        fetch(queryString + '/inmap')
+            .then(
+                function(response) {
+                    if (response.status !== 200) {
+                        console.log('Looks like there was a problem. Status Code: ' + response.status);
+                        return;
+                    }
+
+                    // Examine the text in the response
+                    response.json().then(function(data) {
+                        for(var i=0; i<9;i++){
+                            document.getElementById("map"+String(i)).innerHTML = JSON.stringify(data[i]);
+                        }
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        
+          });
+  
+
+  function back(){
+    console.log(queryString);
+            fetch(queryString + '/delete')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                        location.href = '/player/' + data.playerId + '/maps';
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        // window.location.reload();
+    };
+
+    function spawn(){
+    console.log(queryString);
+            fetch(queryString + '/spawn')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                        fetch('/game/' + data.sessionId + '/player/' + data.player1 + '/' + data.player2 + '/state')
+                            .then(
+                              function(response) {
+                                  if (response.status !== 200) {
+                                        console.log('Looks like there was a problem. Status Code: ' + response.status);
+                                        return;
+                                      }
+
+                                  // Examine the text in the response
+                                  response.json().then(function(stateData) {
+                                    document.getElementById("stateReady").innerHTML = JSON.stringify(stateData);
+        
+                                  //   for(var i=0; i<9;i++){
+                                  //   document.getElementById("map"+String(i)).innerHTML = JSON.stringify(data[i]);
+                                  //   console.log(data[i]);
+                                  // }
+                                });
+                              }
+                            )
+                        .catch(function(err) {
+                            console.log('Fetch Error :-S', err);
+                        });   
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        window.location.reload();
+    };
+
+    function left(){
+    console.log(queryString);
+            fetch(queryString + '/moveLeft')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        window.location.reload();
+    };
+
+    function right(){
+    console.log(queryString);
+            fetch(queryString + '/moveRight')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        window.location.reload();
+    };
+
+    function up(){
+    console.log(queryString);
+            fetch(queryString + '/moveUp')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        window.location.reload();
+    };
+
+    function down(){
+    console.log(queryString);
+            fetch(queryString + '/moveDown')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                        // Examine the text in the response
+                    response.json().then(function(data) {
+                        console.log(data);
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        window.location.reload();
+    };
+
+
+    </script>
+</body>
+</html>
