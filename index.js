@@ -31,6 +31,7 @@ app.get('/test', function(){
     console.log('test');
 });
 
+
 app.get('/games', function(req, res){
     res.send(gameSessions);
 });
