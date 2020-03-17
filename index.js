@@ -153,30 +153,15 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/spawn', functio
     let selectSession = gameSessions.findIndex((x) => x.sessionId == req.params.sessionId);
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     if(gameSessions[selectSession].player1 == players[selectPlayer].playerId || gameSessions[selectSession].player2 == players[selectPlayer].playerId){
-        if(players[selectPlayer].idle == false){
-            var posX = Math.floor(Math.random() * 3);
-            var posY = Math.floor(Math.random() * 3);
-            var pos = MAP.calculateMovement(posX, posY);
-
-            console.log(pos);
-            if(pos > 8){
-                if(map[pos] !== null || map[pos] !== undefined){
-                    res.sendStatus(204);
-                }
-            }else{
-                players[selectPlayer].position_X = posX;
-                players[selectPlayer].position_Y = posY;
-                players[selectPlayer].idle = true;
-                if(players[selectPlayer].playerId === req.params.playerId){
-                    console.log(players);
-                    map[pos] = players[selectPlayer];
-                    res.send(gameSessions[selectSession]);
-                    // res.send(map);
-                } 
-            }
-        }else{
-            res.sendStatus(204);
-        }
+        // if(players[selectPlayer].idle == false){
+            players[selectPlayer] = MAP.spawnPlayerPosition(players[selectPlayer]);
+            var position = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y)
+            map[position] = players[selectPlayer];
+            console.log(map);
+            res.send(gameSessions[selectSession]);
+        // }else{
+        //     res.sendStatus(204);
+        // }
     }    
 });
 
@@ -205,15 +190,9 @@ app.get('/game/:sessionId/player/:playerId1/:playerId2/state', function(req, res
     let selectPlayer1 = players.findIndex((x) => x.playerId == req.params.playerId1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == req.params.playerId2);
     if(gameSessions[selectSession].player1 == players[selectPlayer1].playerId || gameSessions[selectSession].player2 == players[selectPlayer2].playerId || gameSessions[selectSession].player2 == players[selectPlayer1].playerId || gameSessions[selectSession].player1 == players[selectPlayer2].playerId){
-        if(gameSessions[selectSession].player1 == players[selectPlayer1].playerId && players[selectPlayer1].idle == true){
-            if(gameSessions[selectSession].player2 == players[selectPlayer2].playerId && players[selectPlayer2].idle == true){
-                gameSessions[selectSession].onState = state.start(gameSessions[selectSession].onState);
-                console.log(gameSessions);
-                res.send(gameSessions[selectSession]);
-            }
-        }
-    }else{
-        res.sendStatus(204);
+        gameSessions[selectSession] = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]); 
+        console.log(gameSessions[selectSession]);
+        res.send(gameSessions[selectSession]);
     }
 });
 
@@ -221,12 +200,15 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveUp', functi
     let selectSession = gameSessions.findIndex((x) => x.sessionId == req.params.sessionId);
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     if(gameSessions[selectSession].onState == true){
-        var posX = players[selectPlayer].position_X;
-        var posY = players[selectPlayer].position_Y;
-        var pos = MAP.calculateMovement(posX, posY);
-        map.splice(pos);
-        map[MAP.movement(1, players[selectPlayer])] = players[selectPlayer];
-        // players[selectPlayer].position_Y = Math.sqrt((posY + players[selectPlayer].speed) * (posY + players[selectPlayer].speed));
+        var posXNow = players[selectPlayer].position_X;
+        var posYNow = players[selectPlayer].position_Y;
+        var posNow = MAP.calculateMovement(posXNow, posYNow);
+        map.splice(posNow);
+        var position = MAP.movement(1, players[selectPlayer]);
+        console.log(position.posY);
+        players[selectPlayer].position_Y = position.posY;
+        map[MAP.calculateMovement(position.posX, position.posY)] = players[selectPlayer];
+        console.log(players[selectPlayer]);
         res.send(map);
     }else{
         res.sendStatus(204);
@@ -237,12 +219,15 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveDown', func
     let selectSession = gameSessions.findIndex((x) => x.sessionId == req.params.sessionId);
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     if(gameSessions[selectSession].onState == true){
-        var posX = players[selectPlayer].position_X;
-        var posY = players[selectPlayer].position_Y;
-        var pos = MAP.calculateMovement(posX, posY);
-        map.splice(pos);
-        map[MAP.movement(2, players[selectPlayer])] = players[selectPlayer];
-        // players[selectPlayer].position_Y = Math.sqrt((posY - players[selectPlayer].speed) * (posY - players[selectPlayer].speed));
+        var posXNow = players[selectPlayer].position_X;
+        var posYNow = players[selectPlayer].position_Y;
+        var posNow = MAP.calculateMovement(posXNow, posYNow);
+        map.splice(posNow);
+        var position = MAP.movement(2, players[selectPlayer]);
+        console.log(position.posY);
+        players[selectPlayer].position_Y = position.posY;
+        map[MAP.calculateMovement(position.posX, position.posY)] = players[selectPlayer];
+        console.log(players[selectPlayer]);
         res.send(map);
     }else{
         res.sendStatus(204);
@@ -253,12 +238,15 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveLeft', func
     let selectSession = gameSessions.findIndex((x) => x.sessionId == req.params.sessionId);
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     if(gameSessions[selectSession].onState == true){
-        var posX = players[selectPlayer].position_X;
-        var posY = players[selectPlayer].position_Y;
-        var pos = MAP.calculateMovement(posX, posY);
-        map.splice(pos);
-        map[MAP.movement(3, players[selectPlayer])] = players[selectPlayer];
-        // players[selectPlayer].position_Y = Math.sqrt((posX - players[selectPlayer].speed) * (posX - players[selectPlayer].speed));
+        var posXNow = players[selectPlayer].position_X;
+        var posYNow = players[selectPlayer].position_Y;
+        var posNow = MAP.calculateMovement(posXNow, posYNow);
+        map.splice(posNow);
+        var position = MAP.movement(3, players[selectPlayer]);
+        console.log(position.posX);
+        players[selectPlayer].position_X = position.posX;
+        map[MAP.calculateMovement(position.posX, position.posY)] = players[selectPlayer];
+        console.log(players[selectPlayer]);
         res.send(map);
     }else{
         res.sendStatus(204);
@@ -269,12 +257,15 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveRight', fun
     let selectSession = gameSessions.findIndex((x) => x.sessionId == req.params.sessionId);
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     if(gameSessions[selectSession].onState == true){
-        var posX = players[selectPlayer].position_X;
-        var posY = players[selectPlayer].position_Y;
-        var pos = MAP.calculateMovement(posX, posY);
-        map.splice(pos);
-        map[MAP.movement(4, players[selectPlayer])] = players[selectPlayer];
-        // players[selectPlayer].position_Y = Math.sqrt((posX + players[selectPlayer].speed) * (posX + players[selectPlayer].speed));
+        var posXNow = players[selectPlayer].position_X;
+        var posYNow = players[selectPlayer].position_Y;
+        var posNow = MAP.calculateMovement(posXNow, posYNow);
+        map.splice(posNow);
+        var position = MAP.movement(4, players[selectPlayer]);
+        console.log(position.posX);
+        players[selectPlayer].position_X = position.posX;
+        map[MAP.calculateMovement(position.posX, position.posY)] = players[selectPlayer];
+        console.log(players[selectPlayer]);
         res.send(map);
     }else{
         res.sendStatus(204);

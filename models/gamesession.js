@@ -8,7 +8,7 @@ class GameSession {
         this.sessionId = shortid.generate();
         this.player1 = playerId1;
         this.player2 = playerId2;
-        this.onState = false;
+        this.onState = true;
     }
 
     changeSessionName(newSessionName) {

@@ -1,59 +1,101 @@
 const state = require('../gameplay/state');
 
-function spawnPlayer(data, onS) {
-    
+function spawnPlayerPosition(player) {
+    var min=0; 
+    var max=2;  
+    var posX =  Math.floor(Math.random() * (+max - +min)) + +min;
+    console.log("posX - " + posX);
+    var posY = Math.floor(Math.random() * (+max - +min)) + +min;
+    console.log("posY - " + posY);
+    this.player = player;
+    this.player.position_X = posX;
+    this.player.position_Y = posY;
+    this.player.idle = true;
+    return this.player;
 }
 
 function movement(move, data) {
-    if(data.idle == true && data.isAlive == true){
+    this.data = data;
+    if(this.data.idle == true && this.data.isAlive == true){
         if(move == 1){
-            if(data.position_X == 0){
-                return;
+            if(this.data.position_X == 0){
+                return{
+                    'posX' : this.data.position_X,
+                    'posY' : this.data.position_Y
+                };
             }else{
-                newPosY = Math.sqrt(data.position_Y * data.position_Y) + Math.sqrt(data.speed * data.speed);
-                newPosX = Math.sqrt(data.position_X * data.position_X);
+                newPosY = Math.sqrt(this.data.position_Y * this.data.position_Y) + Math.sqrt(this.data.speed * this.data.speed);
+                newPosX = Math.sqrt(this.data.position_X * this.data.position_X);
                 state.end();
-                return calculateMovement(newPosX, newPosY);
+                return {
+                    'posX' : newPosX,
+                    'posY' : newPosY
+                };
             }
         }else if(move == 2){
-            if(data.position_X == 2){
-                return;
+            if(this.data.position_X == 2){
+                return{
+                    'posX' : this.data.position_X,
+                    'posY' : this.data.position_Y
+                };
             }else{
-                newPosY = Math.sqrt(data.position_Y * data.position_Y) - Math.sqrt(data.speed * data.speed);
-                newPosX = Math.sqrt(data.position_X * data.position_X);
+                newPosY = Math.sqrt(this.data.position_Y * this.data.position_Y) - Math.sqrt(this.data.speed * this.data.speed);
+                newPosX = Math.sqrt(this.data.position_X * this.data.position_X);
                 state.end();
-                return calculateMovement(newPosX, newPosY);
+                return {
+                    'posX' : newPosX,
+                    'posY' : newPosY
+                };
             }
         }else if(move == 3){
-            if(data.position_Y == 0){
-                return;
+            if(this.data.position_Y == 0){
+                return{
+                    'posX' : this.data.position_X,
+                    'posY' : this.data.position_Y
+                };
             }else{
-                newPosX = Math.sqrt(data.position_X * data.position_X) - Math.sqrt(data.speed * data.speed);
-                newPosY = Math.sqrt(data.position_Y * data.position_Y);
+                newPosX = Math.sqrt(this.data.position_X * this.data.position_X) - Math.sqrt(this.data.speed * this.data.speed);
+                newPosY = Math.sqrt(this.data.position_Y * this.data.position_Y);
                 state.end();
-                return calculateMovement(newPosX, newPosY);
+                return {
+                    'posX' : newPosX,
+                    'posY' : newPosY
+                };
             }
         }else if(move == 4){
-            if(data.position_Y == 2){
-                return;
+            if(this.data.position_Y == 2){
+                return{
+                    'posX' : this.data.position_X,
+                    'posY' : this.data.position_Y
+                };
             }else{
-                newPosX = Math.sqrt(data.position_X * data.position_X) + Math.sqrt(data.speed * data.speed);
-                newPosY = Math.sqrt(data.position_Y * data.position_Y);
+                newPosX = Math.sqrt(this.data.position_X * this.data.position_X) + Math.sqrt(this.data.speed * this.data.speed);
+                newPosY = Math.sqrt(this.data.position_Y * this.data.position_Y);
                 state.end();
-                return calculateMovement(newPosX, newPosY);
+                return {
+                    'posX' : newPosX,
+                    'posY' : newPosY
+                };
             }
         }
     }else{
-        return;
+        return{
+            'posX' : this.data.position_X,
+            'posY' : this.data.position_Y
+        };
     }
 }
 
 function calculateMovement(posX, posY){
-    return (Math.sqrt(posX * posX) + Math.sqrt(posY * posY) * 3);
+    this.posX = posX;
+    this.posY = posY;
+    var position = Math.sqrt(this.posX * this.posX) + Math.sqrt(this.posY * this.posY) * 3;
+    console.log("position - " + position);
+    return position;
 }
 
 module.exports = {
-    spawnPlayer : spawnPlayer,
+    spawnPlayerPosition : spawnPlayerPosition,
     movement : movement,
     calculateMovement : calculateMovement
 }

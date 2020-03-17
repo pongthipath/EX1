@@ -15,18 +15,18 @@
     <table style="width:100%">
 
         <tr>
-          <td><p id="map0"></p></o></td>
-          <td><p id="map3"></p></td>
-          <td><p id="map6"></p></td>
-        </tr>
-        <tr>
+          <td><p id="map0"></p></td>
           <td><p id="map1"></p></td>
-          <td><p id="map4"></p></td>
-          <td><p id="map7"></p></td>
+          <td><p id="map2"></p></td>
         </tr>
         <tr>
-          <td><p id="map2"></p></td>
+          <td><p id="map3"></p></td>
+          <td><p id="map4"></p></td>
           <td><p id="map5"></p></td>
+        </tr>
+        <tr>
+          <td><p id="map6"></p></td>
+          <td><p id="map7"></p></td>
           <td><p id="map8"></p></td>
         </tr>
       </table>
@@ -104,38 +104,41 @@
                         }
 
                         // Examine the text in the response
-                    response.json().then(function(data) {
+                    response.json().then(async function(data) {
                         console.log(data);
-                        fetch('/game/' + data.sessionId + '/player/' + data.player1 + '/' + data.player2 + '/state')
-                            .then(
-                              function(response) {
-                                  if (response.status !== 200) {
-                                        console.log('Looks like there was a problem. Status Code: ' + response.status);
-                                        return;
-                                      }
-
-                                  // Examine the text in the response
-                                  response.json().then(function(stateData) {
-                                    document.getElementById("stateReady").innerHTML = JSON.stringify(stateData);
-        
-                                  //   for(var i=0; i<9;i++){
-                                  //   document.getElementById("map"+String(i)).innerHTML = JSON.stringify(data[i]);
-                                  //   console.log(data[i]);
-                                  // }
-                                });
-                              }
-                            )
-                        .catch(function(err) {
-                            console.log('Fetch Error :-S', err);
-                        });   
+                        checkState(data);
                     });
                 }
             )
         .catch(function(err) {
             console.log('Fetch Error :-S', err);
         });
-        window.location.reload();
     };
+
+    function checkState(data){
+        fetch('/game/' + data.sessionId + '/player/' + data.player1 + '/' + data.player2 + '/state')
+            .then(
+                function(response) {
+                    if (response.status !== 200) {
+                        console.log('Looks like there was a problem. Status Code: ' + response.status);
+                            return;
+                    }
+
+                    // Examine the text in the response
+                    response.json().then(function(stateData) {
+                    document.getElementById("stateReady").innerHTML = JSON.stringify(stateData);
+        
+                    //   for(var i=0; i<9;i++){
+                    //   document.getElementById("map"+String(i)).innerHTML = JSON.stringify(data[i]);
+                    //   console.log(data[i]);
+                    // }
+                    });
+                }
+            )
+            .catch(function(err) {
+                console.log('Fetch Error :-S', err);
+        });  
+    }
 
     function left(){
     console.log(queryString);
@@ -151,6 +154,7 @@
                         // Examine the text in the response
                     response.json().then(function(data) {
                         console.log(data);
+                        // document.getElementById("stateReady").innerHTML = JSON.stringify(stateData);
                     });
                 }
             )
