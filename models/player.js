@@ -13,7 +13,7 @@ class Player {
         this.position_X = 0;
         this.position_Y = 0;
         this.isAlive = true;
-        this.idle = true;
+        this.idle = false;
     }
 
     changeSessionName(newPlayerName) {

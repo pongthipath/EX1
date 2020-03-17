@@ -1,6 +1,6 @@
 function init(gameState, player1, player2) {
     if(player1.idle == true){
-        if(player2.idle == true){
+        if(player2.idle == false){
             gameState.onState = true;
             return gameState;
         }
