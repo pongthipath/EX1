@@ -34,6 +34,7 @@
       <button onclick="up()">Up</button>
       <button onclick="down()">Down</button>
       <button onclick="right()">Right</button>
+      <button onclick="attack()">Attack</button>
       <p>
       <button onclick="spawn()">Spawn</button>
       <button onclick="back()">Back</button>
@@ -44,7 +45,8 @@
     
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script>
-      var queryString = window.location.href;
+
+    var queryString = window.location.href;
 
         fetch(queryString + '/inmap')
             .then(
@@ -54,10 +56,18 @@
                         return;
                     }
 
-                    // Examine the text in the response
                     response.json().then(function(data) {
-                        for(var i=0; i<9;i++){
-                            document.getElementById("map"+String(i)).innerHTML = JSON.stringify(data[i]);
+                        document.getElementById("map0").innerHTML = JSON.stringify(data.map.pos0);
+                        document.getElementById("map1").innerHTML = JSON.stringify(data.map.pos1);
+                        document.getElementById("map2").innerHTML = JSON.stringify(data.map.pos2);
+                        document.getElementById("map3").innerHTML = JSON.stringify(data.map.pos3);
+                        document.getElementById("map4").innerHTML = JSON.stringify(data.map.pos4);
+                        document.getElementById("map5").innerHTML = JSON.stringify(data.map.pos5);
+                        document.getElementById("map6").innerHTML = JSON.stringify(data.map.pos6);
+                        document.getElementById("map7").innerHTML = JSON.stringify(data.map.pos7);
+                        document.getElementById("map8").innerHTML = JSON.stringify(data.map.pos8);
+                        if(data.game == false){
+                            result(data);
                         }
                     });
                 }
@@ -69,7 +79,6 @@
   
 
   function back(){
-    console.log(queryString);
             fetch(queryString + '/delete')
                 .then(
                     function(response) {
@@ -79,7 +88,6 @@
                         return;
                         }
 
-                        // Examine the text in the response
                     response.json().then(function(data) {
                         console.log(data);
                         location.href = '/player/' + data.playerId + '/maps';
@@ -89,11 +97,9 @@
         .catch(function(err) {
             console.log('Fetch Error :-S', err);
         });
-        // window.location.reload();
     };
 
     function spawn(){
-    console.log(queryString);
             fetch(queryString + '/spawn')
                 .then(
                     function(response) {
@@ -103,7 +109,6 @@
                         return;
                         }
 
-                        // Examine the text in the response
                     response.json().then(async function(data) {
                         console.log(data);
                         if(data.player2 != undefined){
@@ -128,14 +133,9 @@
                             return;
                     }
 
-                    // Examine the text in the response
                     response.json().then(function(stateData) {
                     document.getElementById("stateReady").innerHTML = JSON.stringify(stateData);
                         window.location.reload();
-                    //   for(var i=0; i<9;i++){
-                    //   document.getElementById("map"+String(i)).innerHTML = JSON.stringify(data[i]);
-                    //   console.log(data[i]);
-                    // }
                     });
                 }
             )
@@ -145,7 +145,6 @@
     }
 
     function left(){
-    console.log(queryString);
             fetch(queryString + '/moveLeft')
                 .then(
                     function(response) {
@@ -155,10 +154,11 @@
                         return;
                         }
 
-                        // Examine the text in the response
                     response.json().then(function(data) {
                         console.log(data);
-                        // document.getElementById("stateReady").innerHTML = JSON.stringify(stateData);
+                        if(data.game == false){
+                            result(data);
+                        }
                     });
                 }
             )
@@ -169,7 +169,6 @@
     };
 
     function right(){
-    console.log(queryString);
             fetch(queryString + '/moveRight')
                 .then(
                     function(response) {
@@ -179,9 +178,11 @@
                         return;
                         }
 
-                        // Examine the text in the response
                     response.json().then(function(data) {
                         console.log(data);
+                        if(data.game == false){
+                            result(data);
+                        }
                     });
                 }
             )
@@ -192,7 +193,6 @@
     };
 
     function up(){
-    console.log(queryString);
             fetch(queryString + '/moveUp')
                 .then(
                     function(response) {
@@ -202,9 +202,11 @@
                         return;
                         }
 
-                        // Examine the text in the response
                     response.json().then(function(data) {
                         console.log(data);
+                        if(data.game == false){
+                            result(data);
+                        }
                     });
                 }
             )
@@ -215,7 +217,6 @@
     };
 
     function down(){
-    console.log(queryString);
             fetch(queryString + '/moveDown')
                 .then(
                     function(response) {
@@ -225,9 +226,11 @@
                         return;
                         }
 
-                        // Examine the text in the response
                     response.json().then(function(data) {
                         console.log(data);
+                        if(data.game == false){
+                            result(data);
+                        }
                     });
                 }
             )
@@ -237,6 +240,34 @@
         window.location.reload();
     };
 
+    function attack(){
+        fetch(queryString + '/attack')
+                .then(
+                    function(response) {
+                        if (response.status !== 200) {
+                            console.log('Looks like there was a problem. Status Code: ' +
+                            response.status);
+                        return;
+                        }
+
+                    response.json().then(function(data) {
+                        console.log(data);
+                        if(data.game == false){
+                            result(data, player);
+                        }
+                    });
+                }
+            )
+        .catch(function(err) {
+            console.log('Fetch Error :-S', err);
+        });
+        window.location.reload();
+    };
+    function result(data){
+        this.data = data;
+        console.log(this.data);
+        location.href = queryString + '/result'; 
+    }
 
     </script>
 </body>

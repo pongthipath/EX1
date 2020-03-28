@@ -9,8 +9,6 @@
     <p id="sessions"></p>
     <p>Total players = </p>
     <p id="players"></p>
-    <p>Map position = </p>
-    <p id="maps"></p>
     <button onclick="createPlayer()">Create Player</button>
     <p id="playerCreate"></p>
 
@@ -85,8 +83,7 @@
       response.json().then(function(data) {
         console.log(data);
         document.getElementById("sessions").innerHTML = JSON.stringify(data.sessions);
-        document.getElementById("players").innerHTML = JSON.stringify(data.players);
-        document.getElementById("maps").innerHTML = JSON.stringify(data.maps);       
+        document.getElementById("players").innerHTML = JSON.stringify(data.players);    
       });
     }
   )
