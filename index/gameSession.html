@@ -18,7 +18,6 @@
     <script>
       var queryString = window.location.href;
       function joinSession(){
-        console.log(excelDataTable);
 
         console.log(queryString);
 
@@ -27,10 +26,10 @@
           clickFunc(sessionId);
         });
 
-        function clickFunc(thisSession) {
-          var sessionId = thisSession;
+        function clickFunc(sessionId) {
+          this.sessionId = sessionId;
           console.log(sessionId);
-          fetch(queryString + '/game/' + sessionId + '/addplayer')
+          fetch(queryString + '/game/' + this.sessionId + '/addplayer')
                 .then(
                     function(response) {
                         if (response.status !== 200) {
@@ -38,8 +37,6 @@
                             response.status);
                         return;
                         }
-
-                        // Examine the text in the response
                     response.json().then(function(data) {
                         console.log(data);
                         document.getElementById("joinCreate").innerHTML = "Games are joined!";
@@ -72,6 +69,7 @@
 
     function createGameSession(){
       console.log('createGameSession');
+      
       fetch('/game/create')
         .then(
           function(response) {
@@ -79,8 +77,6 @@
               console.log('Looks like there was a problem. Status Code: ' + response.status);
               return;
             }
-
-            // Examine the text in the response
             response.json().then(function(data) {
               console.log(data);
               document.getElementById("gameCreate").innerHTML = "Games are created!";
@@ -90,10 +86,10 @@
         .catch(function(err) {
             console.log('Fetch Error :-S', err);
         });
-        window.location.reload();
     };
     
     console.log('Show Results!');
+
     fetch('/result')
         .then(
     function(response) {
@@ -102,15 +98,10 @@
           response.status);
         return;
       }
-
-      // Examine the text in the response
       response.json().then(function(data) {
         console.log(data);
-        document.getElementById("sessions").innerHTML = JSON.stringify(data.sessions);
-        // document.getElementById("players").innerHTML = JSON.stringify(data.players);
-        // document.getElementById("maps").innerHTML = JSON.stringify(data.maps);      
+        document.getElementById("sessions").innerHTML = JSON.stringify(data.sessions);  
         
-      //ErrorCode Table
       selector = '#excelDataTable'
 
           // creates a <table> element and a <tbody> element
@@ -128,7 +119,7 @@
               var games = data.sessions[i].sessionId;
               var cellValue = games; //checkbox+
               // var hl = document.createElement("button");
-              //hl.style = "background-color: #FFFF00";
+              // hl.style = "background-color: #FFFF00";
               // hl.innerHTML = text[1];
               var cellText = document.createTextNode(cellValue);
               button.id = games;

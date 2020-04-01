@@ -4,6 +4,8 @@ const map_finder = require('./gameplay/map_finder');
 const MAP = require('./gameplay/map');
 const app = require('express')();
 const state = require('./gameplay/state');
+const save_load = require('./save_load/save_load');
+const save_load_player = require('./save_load/save_load_Player');
 
 let gameSessions = [];
 let players = [];
@@ -50,6 +52,7 @@ app.get('/game/create', function(req, res){
     var newGameSessions = new GameSession();
     gameSessions.push(newGameSessions);
     res.send(gameSessions);
+    save_load.saveFile(newGameSessions);
 });
 
 app.get('/game/delete/:sessionId', function(req, res){
@@ -72,6 +75,7 @@ app.get('/player/create', function(req, res){
     var newPlayer = new Player();
     players.push(newPlayer);
     res.send(players);
+    save_load_player.saveFile(newPlayer);
 });
 
 app.get('/player/:playerId/maps/delete', function(req, res){
@@ -110,6 +114,7 @@ app.get('/player/:playerId/maps', function(req, res){
 
     if(selectPlayer >= 0){
         res.sendFile(__dirname + '/index/gameSession.html');
+
     }else{
         res.sendStatus(304);
     }
@@ -134,6 +139,7 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/delete', functi
         gameSessions[selectSession] = map_finder.findPlayerToDelete(position, gameSessions[selectSession]);
         gameSessions[selectSession] = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
         gameSessions[selectSession].player1 = undefined;
+        save_load.saveGameSessionAAT(gameSessions[selectSession]);
         res.send(players[selectPlayer]);
     }else if(gameSessions[selectSession].player2 == players[selectPlayer].playerId){
         players[selectPlayer].idle = false;
@@ -141,6 +147,7 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/delete', functi
         gameSessions[selectSession] = map_finder.findPlayerToDelete(position, gameSessions[selectSession]);
         gameSessions[selectSession] = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
         gameSessions[selectSession].player2 = undefined;
+        save_load.saveGameSessionAAT(gameSessions[selectSession]);
         res.send(players[selectPlayer]);
     }else{
         res.sendStatus(204);
@@ -158,26 +165,27 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer', function(req, res){
 
     // Check playerId in Gamesession and current player are match
 
-    if(gameSessions[selectSession].player1 == players[selectPlayer].playerId || gameSessions[selectSession].player2 == players[selectPlayer].playerId){
-        res.sendStatus(204);
-
         // Check player in Gamesession 
 
         // If have player in player1, it will add player in player2.
         // If not, it will add into player1
 
         // Then, add current playerId in Gamesession
-
-    }else if(gameSessions[selectSession].player1 == undefined || gameSessions[selectSession].player2 == undefined){
+    console.log(gameSessions[selectSession]);
+    if(gameSessions[selectSession].player1 == undefined || gameSessions[selectSession].player2 == undefined){
         if(gameSessions[selectSession].player1 === undefined ){
             gameSessions[selectSession].player1 = players[selectPlayer].playerId;
+            save_load.saveGameSessionAAT(gameSessions[selectSession]);
             res.send(gameSessions);
         }else if(gameSessions[selectSession].player1 !== undefined){
             gameSessions[selectSession].player2 = players[selectPlayer].playerId;
+            save_load.saveGameSessionAAT(gameSessions[selectSession]);
             res.send(gameSessions);
         }else{
             res.sendStatus(204);
         }
+    }else{
+        res.sendStatus(204);
     }
 });
 
@@ -208,6 +216,7 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/inmap', functio
     // Then response Gamesession
 
     if(gameSessions[selectSession].player1 == players[selectPlayer].playerId || gameSessions[selectSession].player2 == players[selectPlayer].playerId){
+        save_load.saveGameSessionAAT(gameSessions[selectSession]);
         res.send(gameSessions[selectSession]);
     }
 });
