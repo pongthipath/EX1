@@ -1,39 +1,63 @@
 const fs = require('fs');
+const path = require('path');
 
 function saveFile(gamesession){
     this.gamesession = gamesession;
     var gamesessionRaw = JSON.stringify(this.gamesession);
-    fs.writeFile('save_load/save/' + this.gamesession.sessionId + '.json', gamesessionRaw, 'utf8', function (err) {
+    fs.writeFile(path.resolve('save_load/save' ,this.gamesession.sessionId) + '.json', gamesessionRaw, 'utf8', function (err) {
         if(err) throw err;
     });
-   
 }
 
 
 function saveGameSessionAAT(gamesession){
     this.gamesession = gamesession;
-    fs.readFile('save_load/save/' + this.gamesession.sessionId + '.json', function(err, data){
-        var rawGameSession = JSON.parse(data);
-        rawGameSession.map = this.gamesession.map;
-        rawGameSession.mapSave.push(this.gamesession.map);
-        saveFile(rawGameSession);
+    var thisSession = fs.readFileSync(path.resolve('save_load/save' ,this.gamesession.sessionId) + '.json', function(err, data){
+        if(err) throw err;
     });
+    var thisGameSession = JSON.parse(thisSession);
+    if(thisGameSession.mapSave[thisGameSession.mapSave.length-1] == this.gamesession.map){
+        return
+    }else{
+         thisGameSession.mapSave.push(this.gamesession.map);
+        this.gamesession.mapSave = thisGameSession.mapSave;
+        saveFile(this.gamesession);
+    }
+   
 }
 
 function loadSession(gamesessionId){
     this.gamesessionId = gamesessionId;
-    var rawGameSession = fs.readFileSync('save_load/save/' + this.gamesessionId + '.json', function(err, data){
+    var rawGameSession = fs.readFileSync(path.resolve('save_load/save' ,this.gamesessionId) + '.json', function(err, data){
         if(err) throw err;
     });
-    this.gamesession = JSON.parse(rawGameSession);
-    this.gamesession = session;
-    this.gamesession.map = session.mapSave[session.mapSave.length-1];
-    this.gamesession.mapSave = [];
-    return this.gamesession;
+    var gamesession = JSON.parse(rawGameSession);
+    gamesession.map = gamesession.mapSave[gamesession.mapSave.length-1];
+    gamesession.mapSave = [];
+    return gamesession;
+}
+
+function loadAllFile(){
+    var sessionArray = [];
+    var sessionList = fs.readdirSync(path.resolve('save_load/save'), (err, files) => {
+        files.forEach(file => {
+          console.log(file);
+        });
+      });
+    for(var i = 0 ; i < sessionList.length ; i++){
+        var data = fs.readFileSync(path.resolve('save_load/save', sessionList[i]), function(err, data){
+            if(err) throw err;
+        });
+        var rawData = JSON.parse(data);
+        rawData.mapSave = [];
+        sessionArray.push(rawData);
+    }
+    return sessionArray;
 }
 
 module.exports = {
     saveFile : saveFile,
     saveGameSessionAAT : saveGameSessionAAT,
-    loadSession : loadSession
+    loadSession : loadSession,
+    loadAllFile : loadAllFile
 }

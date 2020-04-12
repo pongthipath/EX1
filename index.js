@@ -6,10 +6,16 @@ const app = require('express')();
 const state = require('./gameplay/state');
 const save_load = require('./save_load/save_load');
 const save_load_player = require('./save_load/save_load_Player');
+const fs = require('fs');
 
-let gameSessions = [];
-let players = [];
+let gameSessions = save_load.loadAllFile();
+let players = save_load_player.loadAllFile();
 
+setInterval(function(){
+    gameSessions = save_load.loadAllFile();
+    players = save_load_player.loadAllFile();
+    // console.log("Updated!");
+}, 1000);
 
 app.get('/', function(req, res){
 
@@ -51,8 +57,8 @@ app.get('/game/create', function(req, res){
 
     var newGameSessions = new GameSession();
     gameSessions.push(newGameSessions);
-    res.send(gameSessions);
     save_load.saveFile(newGameSessions);
+    res.send(gameSessions);
 });
 
 app.get('/game/delete/:sessionId', function(req, res){
@@ -74,8 +80,8 @@ app.get('/player/create', function(req, res){
 
     var newPlayer = new Player();
     players.push(newPlayer);
-    res.send(players);
     save_load_player.saveFile(newPlayer);
+    res.send(players);
 });
 
 app.get('/player/:playerId/maps/delete', function(req, res){
@@ -132,22 +138,28 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/delete', functi
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
 
     // Set player1 or player2 to undefinded, if player leave the Gamesession
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
 
     if(gameSessions[selectSession].player1 == players[selectPlayer].playerId){
-        players[selectPlayer].idle = false;
+        currentPlayer.idle = false;
         var position = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y);
-        gameSessions[selectSession] = map_finder.findPlayerToDelete(position, gameSessions[selectSession]);
-        gameSessions[selectSession] = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
-        gameSessions[selectSession].player1 = undefined;
-        save_load.saveGameSessionAAT(gameSessions[selectSession]);
+        game = map_finder.findPlayerToDelete(position, gameSessions[selectSession]);
+        game = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
+        game.player1 = null;
+        save_load.saveGameSessionAAT(game);
+        save_load_player.updatePlayer(currentPlayer);
         res.send(players[selectPlayer]);
     }else if(gameSessions[selectSession].player2 == players[selectPlayer].playerId){
-        players[selectPlayer].idle = false;
+        currentPlayer.idle = false;
         var position = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y);
-        gameSessions[selectSession] = map_finder.findPlayerToDelete(position, gameSessions[selectSession]);
-        gameSessions[selectSession] = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
-        gameSessions[selectSession].player2 = undefined;
-        save_load.saveGameSessionAAT(gameSessions[selectSession]);
+        game = map_finder.findPlayerToDelete(position, gameSessions[selectSession]);
+        game = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
+        game.player2 = null;
+        save_load.saveGameSessionAAT(game);
+        save_load_player.updatePlayer(currentPlayer);
         res.send(players[selectPlayer]);
     }else{
         res.sendStatus(204);
@@ -163,6 +175,9 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer', function(req, res){
     let selectSession = gameSessions.findIndex((x) => x.sessionId == req.params.sessionId);
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
 
+    var game = gameSessions[selectSession];
+    var currentPlayer = players[selectPlayer];
+
     // Check playerId in Gamesession and current player are match
 
         // Check player in Gamesession 
@@ -171,16 +186,18 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer', function(req, res){
         // If not, it will add into player1
 
         // Then, add current playerId in Gamesession
-    console.log(gameSessions[selectSession]);
-    if(gameSessions[selectSession].player1 == undefined || gameSessions[selectSession].player2 == undefined){
-        if(gameSessions[selectSession].player1 === undefined ){
-            gameSessions[selectSession].player1 = players[selectPlayer].playerId;
-            save_load.saveGameSessionAAT(gameSessions[selectSession]);
-            res.send(gameSessions);
-        }else if(gameSessions[selectSession].player1 !== undefined){
-            gameSessions[selectSession].player2 = players[selectPlayer].playerId;
-            save_load.saveGameSessionAAT(gameSessions[selectSession]);
-            res.send(gameSessions);
+
+    if(gameSessions[selectSession].player1 == null || gameSessions[selectSession].player2 == null){
+        if(gameSessions[selectSession].player1 == null ){
+            game.player1 = currentPlayer.playerId;
+            save_load.saveGameSessionAAT(game);
+            save_load_player.updatePlayer(currentPlayer);
+            res.send(gameSessions[selectSession]);
+        }else if(gameSessions[selectSession].player1 !== null){
+            game.player2 = currentPlayer.playerId;
+            save_load.saveGameSessionAAT(game);
+            save_load_player.updatePlayer(currentPlayer);
+            res.send(gameSessions[selectSession]);
         }else{
             res.sendStatus(204);
         }
@@ -216,7 +233,7 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/inmap', functio
     // Then response Gamesession
 
     if(gameSessions[selectSession].player1 == players[selectPlayer].playerId || gameSessions[selectSession].player2 == players[selectPlayer].playerId){
-        save_load.saveGameSessionAAT(gameSessions[selectSession]);
+        // save_load.saveGameSessionAAT(gameSessions[selectSession]);
         res.send(gameSessions[selectSession]);
     }
 });
@@ -229,6 +246,11 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/spawn', functio
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
 
 
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
+
     // Check player in Gamesession 
     // Find player in map
     //  -If not have any player in the map --> Spawn player
@@ -236,22 +258,26 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/spawn', functio
     //      --> random until it's not have another player in that position.
 
     if(gameSessions[selectSession].player1 == players[selectPlayer].playerId || gameSessions[selectSession].player2 == players[selectPlayer].playerId){
-        var countPlayer = map_finder.playerCount(gameSessions[selectSession]);
-        if(gameSessions[selectSession].player1 == players[selectPlayer].playerId && countPlayer < 1){
-            var playerSpawnPosition = MAP.spawnPlayerPosition(players[selectPlayer], gameSessions[selectSession]);
-            players[selectPlayer] = playerSpawnPosition;
-            var position = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y);
-            gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
+        var countPlayer = map_finder.playerCount(game);
+        if(countPlayer < 1){
+            var playerSpawnPosition = MAP.spawnPlayerPosition(currentPlayer, game);
+            currentPlayer = playerSpawnPosition;
+            var position = MAP.calculateMovement(currentPlayer.position_X, currentPlayer.position_Y);
+            game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+            save_load.saveGameSessionAAT(game);
+            save_load_player.updatePlayer(currentPlayer);
             res.send(gameSessions[selectSession]);
-        }else if(gameSessions[selectSession].player2 == players[selectPlayer].playerId && countPlayer < 2){
-            var playerSpawnPosition = MAP.spawnPlayerPosition(players[selectPlayer], gameSessions[selectSession]);
+        }else if(countPlayer < 2){
+            var playerSpawnPosition = MAP.spawnPlayerPosition(currentPlayer, game);
             var position = MAP.calculateMovement(playerSpawnPosition.position_X, playerSpawnPosition.position_Y);
-            var player1Position = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer1]);
+            var player1Position = map_finder.findPlayerInPosition(game, player1Position);
             if(position == player1Position){
                 res.sendStatus(204);
             }else{
-                players[selectPlayer] = playerSpawnPosition;
-                gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
+                currentPlayer = playerSpawnPosition;
+                game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                save_load.saveGameSessionAAT(game);
+                save_load_player.updatePlayer(currentPlayer);
                 res.send(gameSessions[selectSession]);
             }
         }else{
@@ -271,12 +297,22 @@ app.get('/game/:sessionId/player/:playerId1/:playerId2/state', function(req, res
     let selectSession = gameSessions.findIndex((x) => x.sessionId == req.params.sessionId);
     let selectPlayer1 = players.findIndex((x) => x.playerId == req.params.playerId1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == req.params.playerId2);
-    if(gameSessions[selectSession].player1 == players[selectPlayer1].playerId || gameSessions[selectSession].player2 == players[selectPlayer2].playerId || gameSessions[selectSession].player2 == players[selectPlayer1].playerId || gameSessions[selectSession].player1 == players[selectPlayer2].playerId){
-        gameSessions[selectSession] = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
-        gameSessions[selectSession] = MAP.spawnBuffPosition(gameSessions[selectSession]);
+
+    let game = gameSessions[selectSession];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
+
+    if(game.player1 == player1FromGS.playerId || game.player2 == player2FromGS.playerId || game.player2 == player1FromGS.playerId || game.player1 == player2FromGS.playerId){
+        console.log(game);
+        console.log(player1FromGS);
+        console.log(player2FromGS);
+        game = state.init(game, player1FromGS, player2FromGS);
+        game = MAP.spawnBuffPosition(game);
+        save_load.saveGameSessionAAT(game);
         res.send(gameSessions[selectSession]);
     }else{
-        gameSessions[selectSession] = state.init(gameSessions[selectSession], players[selectPlayer1], players[selectPlayer2]);
+        game = state.init(game, player1FromGS, player2FromGS);
+        save_load.saveGameSessionAAT(game);
         res.send(gameSessions[selectSession]);
     }
 });
@@ -295,21 +331,26 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveUp', functi
     let selectPlayer1 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
 
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
+
     // Check state
 
-    if(gameSessions[selectSession].onState == true){
-        if(players[selectPlayer].idle == true){
+    if(game.onState == true){
+        if(currentPlayer.idle == true){
 
             // Verify position have no player
             //      - Calculate player position by formular
             //      - Generate the new player position
             //      - Compare position
 
-            var oldPosition = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y);
-            var rawPosition = MAP.movement(1, players[selectPlayer]);
+            var oldPosition = MAP.calculateMovement(currentPlayer.position_X, currentPlayer.position_Y);
+            var rawPosition = MAP.movement(1, currentPlayer);
             var position = MAP.calculateMovement(rawPosition.position_X, rawPosition.position_Y);
-            if(players[selectPlayer].playerId == players[selectPlayer1].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer2]);
+            if(currentPlayer.playerId == player1FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player2FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -321,16 +362,20 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveUp', functi
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = false;
-                    players[selectPlayer2].idle = true;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = false;
+                    player2FromGS.idle = true;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
-            }else if(players[selectPlayer].playerId == players[selectPlayer2].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer1]);
+            }else if(currentPlayer.playerId == player2FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player1FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -342,13 +387,17 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveUp', functi
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = true;
-                    players[selectPlayer2].idle = false;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = true;
+                    player2FromGS.idle = false;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
             }else{
                 res.sendStatus(204);
@@ -359,8 +408,8 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveUp', functi
 
         // Check state and the game ended
 
-    }else if(gameSessions[selectSession].onState == false){
-        if(gameSessions[selectSession].game == false){
+    }else if(game.onState == false){
+        if(game.game == false){
             res.send(gameSessions[selectSession]);
         }else{
             res.sendStatus(204);
@@ -378,21 +427,26 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveDown', func
     let selectPlayer1 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
 
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
+
     // Check state
 
-    if(gameSessions[selectSession].onState == true){
-        if(players[selectPlayer].idle == true){
+    if(game.onState == true){
+        if(currentPlayer.idle == true){
 
             // Verify position have no player
             //      - Calculate player position by formular
             //      - Generate the new player position
             //      - Compare position
 
-            var oldPosition = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y);
-            var rawPosition = MAP.movement(2, players[selectPlayer]);
+            var oldPosition = MAP.calculateMovement(currentPlayer.position_X, currentPlayer.position_Y);
+            var rawPosition = MAP.movement(2, currentPlayer);
             var position = MAP.calculateMovement(rawPosition.position_X, rawPosition.position_Y);
-            if(players[selectPlayer].playerId == players[selectPlayer1].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer2]);
+            if(currentPlayer.playerId == player1FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player2FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -404,16 +458,20 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveDown', func
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = false;
-                    players[selectPlayer2].idle = true;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = false;
+                    player2FromGS.idle = true;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
-            }else if(players[selectPlayer].playerId == players[selectPlayer2].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer1]);
+            }else if(currentPlayer.playerId == player2FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player1FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -425,13 +483,17 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveDown', func
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = true;
-                    players[selectPlayer2].idle = false;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = true;
+                    player2FromGS.idle = false;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
             }else{
                 res.sendStatus(204);
@@ -442,8 +504,8 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveDown', func
 
         // Check state and the game ended
 
-    }else if(gameSessions[selectSession].onState == false){
-        if(gameSessions[selectSession].game == false){
+    }else if(game.onState == false){
+        if(game.game == false){
             res.send(gameSessions[selectSession]);
         }else{
             res.sendStatus(204);
@@ -460,22 +522,27 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveLeft', func
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     let selectPlayer1 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
+
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
    
     // Check state
 
-    if(gameSessions[selectSession].onState == true){
-        if(players[selectPlayer].idle == true){
+    if(game.onState == true){
+        if(currentPlayer.idle == true){
 
             // Verify position have no player
             //      - Calculate player position by formular
             //      - Generate the new player position
             //      - Compare position
 
-            var oldPosition = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y);
-            var rawPosition = MAP.movement(3, players[selectPlayer]);
+            var oldPosition = MAP.calculateMovement(currentPlayer.position_X, currentPlayer.position_Y);
+            var rawPosition = MAP.movement(3, currentPlayer);
             var position = MAP.calculateMovement(rawPosition.position_X, rawPosition.position_Y);
-            if(players[selectPlayer].playerId == players[selectPlayer1].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer2]);
+            if(currentPlayer.playerId == player1FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player2FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -487,16 +554,20 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveLeft', func
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = false;
-                    players[selectPlayer2].idle = true;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = false;
+                    player2FromGS.idle = true;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
-            }else if(players[selectPlayer].playerId == players[selectPlayer2].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer1]);
+            }else if(currentPlayer.playerId == player2FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player1FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -508,13 +579,17 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveLeft', func
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = true;
-                    players[selectPlayer2].idle = false;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = true;
+                    player2FromGS.idle = false;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
             }else{
                 res.sendStatus(204);
@@ -525,8 +600,8 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveLeft', func
 
         // Check state and the game ended
 
-    }else if(gameSessions[selectSession].onState == false){
-        if(gameSessions[selectSession].game == false){
+    }else if(game.onState == false){
+        if(game.game == false){
             res.send(gameSessions[selectSession]);
         }else{
             res.sendStatus(204);
@@ -543,22 +618,27 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveRight', fun
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     let selectPlayer1 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
+
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
    
     // Check state
 
-    if(gameSessions[selectSession].onState == true){
-        if(players[selectPlayer].idle == true){
+    if(game.onState == true){
+        if(currentPlayer.idle == true){
 
             // Verify position have no player
             //      - Calculate player position by formular
             //      - Generate the new player position
             //      - Compare position
 
-            var oldPosition = MAP.calculateMovement(players[selectPlayer].position_X, players[selectPlayer].position_Y);
-            var rawPosition = MAP.movement(4, players[selectPlayer]);
+            var oldPosition = MAP.calculateMovement(currentPlayer.position_X, currentPlayer.position_Y);
+            var rawPosition = MAP.movement(4, currentPlayer);
             var position = MAP.calculateMovement(rawPosition.position_X, rawPosition.position_Y);
-            if(players[selectPlayer].playerId == players[selectPlayer1].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer2]);
+            if(currentPlayer.playerId == player1FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player2FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -570,16 +650,20 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveRight', fun
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = false;
-                    players[selectPlayer2].idle = true;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = false;
+                    player2FromGS.idle = true;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
-            }else if(players[selectPlayer].playerId == players[selectPlayer2].playerId){
-                var checkNullPosition = map_finder.findPlayerInPosition(gameSessions[selectSession], players[selectPlayer1]);
+            }else if(currentPlayer.playerId == player2FromGS.playerId){
+                var checkNullPosition = map_finder.findPlayerInPosition(game, player1FromGS);
                 if(checkNullPosition == position){
                     res.sendStatus(204);
                 }else{
@@ -591,13 +675,17 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveRight', fun
                     //      - Add player to the map by the new player position(position_X, position_Y) that already set up
                     //      - Check the buff(Attack up, Defend up), if player on that buff's positon
 
-                    gameSessions[selectSession] = map_finder.findPlayerToDelete(oldPosition, gameSessions[selectSession]);
-                    players[selectPlayer1].idle = true;
-                    players[selectPlayer2].idle = false;
-                    players[selectPlayer] = rawPosition;
-                    gameSessions[selectSession] = map_finder.findPositionToAddPlayer(position, gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectAttackBuff(gameSessions[selectSession], players[selectPlayer]);
-                    players[selectPlayer] = MAP.checkCollectDeffendBuff(gameSessions[selectSession], players[selectPlayer]);
+                    game = map_finder.findPlayerToDelete(oldPosition, game);
+                    player1FromGS.idle = true;
+                    player2FromGS.idle = false;
+                    currentPlayer = rawPosition;
+                    game = map_finder.findPositionToAddPlayer(position, game, currentPlayer);
+                    currentPlayer = MAP.checkCollectAttackBuff(game, currentPlayer);
+                    currentPlayer = MAP.checkCollectDeffendBuff(game, currentPlayer);
+                    save_load.saveGameSessionAAT(game);
+                    save_load_player.updatePlayer(currentPlayer);
+                    save_load_player.updatePlayer(player1FromGS);
+                    save_load_player.updatePlayer(player2FromGS);
                 }
             }else{
                 res.sendStatus(204);
@@ -608,8 +696,8 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/moveRight', fun
 
         // Check state and the game ended
 
-    }else if(gameSessions[selectSession].onState == false){
-        if(gameSessions[selectSession].game == false){
+    }else if(game.onState == false){
+        if(game.game == false){
             res.send(gameSessions[selectSession]);
         }else{
             res.sendStatus(204);
@@ -627,13 +715,18 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/attack', functi
     let selectPlayer1 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
 
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
+
     // Check state
     if(players[selectPlayer].playerId == gameSessions[selectSession].player1 || players[selectPlayer].playerId == gameSessions[selectSession].player2){
-        if(gameSessions[selectSession].onState == false){
+        if(game.onState == false){
 
             // Check state and the game ended
 
-            if(gameSessions[selectSession].game == false){
+            if(game.game == false){
                 res.send(gameSessions[selectSession]);
             }else{
                 res.sendStatus(204);
@@ -647,12 +740,15 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/attack', functi
             //      - Set turn
             //      - Check player alive status if player's health equal to 0 the game will end
 
-            var enemyId = MAP.findEnemyId(gameSessions[selectSession], players[selectPlayer]);
+            var enemyId = MAP.findEnemyId(game, currentPlayer);
             let selectEnemyPlayer = players.findIndex((x) => x.playerId == enemyId);
-            players[selectEnemyPlayer] = MAP.attackEnemy(players[selectPlayer], players[selectEnemyPlayer]);
-            players[selectPlayer].idle = false;
-            gameSessions[selectSession] = state.end(players[selectEnemyPlayer], gameSessions[selectSession]);
-            if(gameSessions[selectSession].game == false){
+            players[selectEnemyPlayer] = MAP.attackEnemy(currentPlayer, players[selectEnemyPlayer]);
+            currentPlayer.idle = false;
+            game = state.end(players[selectEnemyPlayer], game);
+            save_load.saveGameSessionAAT(game);
+            save_load_player.updatePlayer(currentPlayer);
+            save_load_player.updatePlayer(players[selectEnemyPlayer]);
+            if(game.game == false){
                 res.send(gameSessions[selectSession]);
             }
         }
@@ -668,6 +764,11 @@ app.get('/player/:playerId/maps/game/:sessionId/addplayer/ingame/result', functi
     let selectPlayer = players.findIndex((x) => x.playerId == req.params.playerId);
     let selectPlayer1 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player1);
     let selectPlayer2 = players.findIndex((x) => x.playerId == gameSessions[selectSession].player2);
+
+    let game = gameSessions[selectSession];
+    let currentPlayer = players[selectPlayer];
+    let player1FromGS = players[selectPlayer1];
+    let player2FromGS = players[selectPlayer2];
 
     // Check player in Gamesession
 

@@ -6,13 +6,13 @@ class GameSession {
     constructor(sessionName, playerId1, playerId2, positionAtk, positionDef, winner) {
         // this.sessionName = sessionName;
         this.sessionId = shortid.generate();
-        this.player1 = '';
-        this.player2 = '';
+        this.player1 = null;
+        this.player2 = null;
         this.onState = false;
-        this.attackPowerBuffPosition = Number;
-        this.deffendPowerBuffPosition = Number;
+        this.attackPowerBuffPosition = null;
+        this.deffendPowerBuffPosition = null;
         this.game = true;
-        this.winner = '';
+        this.winner = null;
         this.map = {
             "pos0": '',
             "pos1": '',
